@@ -1,7 +1,10 @@
 import yt_dlp
 from pytube import YouTube
 import ffmpeg
-import os
+import shutil, os, platform
+
+def is_windows():
+    return platform.system() == "Windows"
 
 def get_shorts(channel):
     
@@ -46,51 +49,75 @@ def get_shorts(channel):
             exit()
   
 ## download shorts high quality
+def current_path():
+    if is_windows():
+        return os.getcwd().replace("\\", "/")
+    else:
+        return os.getcwd()
+
           
 def download_shorts(short_links, save_path):
     save_path = save_path.replace('"', '')
     save_path = save_path.replace("'", "")
+    if is_windows():
+        save_path = save_path.replace("\\", "/")
     if not os.path.exists(save_path):
         print("😵  Error: Save path does not exist. Exiting...\n")
         exit()
     ## found shorts
     print(f"🤩  Found {len(short_links)} video shorts\n")
         
+    counter = 0  # Initialize a counter for numbering the files
     for short_link in short_links:
         ## check if video quality 1080p is available then download video and audio to temp and merge them by ffmpeg and delete temp files
         yt = YouTube(short_link)
         
         try:
-            if yt.streams.filter(res="1080p").first() != None:
+            if yt.streams.filter(res="1080p").first() is not None:
                 print(f"⬇️  Start Downloading {short_link} in 1080p\n")
-                yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename="./temp/video.mp4")
-                yt.streams.filter(only_audio=True).first().download(filename="./temp/audio.mp4")
+                yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename= current_path() + "/temp/video.mp4")
+                yt.streams.filter(only_audio=True).first().download(filename= current_path() + "/temp/audio.mp4")
                 print("🔀  Merging video and audio...\n")
-                video = ffmpeg.input("./temp/video.mp4")
-                audio = ffmpeg.input("./temp/audio.mp4")
+                video = ffmpeg.input(current_path() + "/temp/video.mp4")
+                audio = ffmpeg.input(current_path() + "/temp/audio.mp4")
                 arguments = {
                     'c:v': 'copy',
                     'c:a': 'aac',
-                    'b:a': '128k'
+                    'b:a': '128k',
                 }
-                ffmpeg.run(ffmpeg.output(audio, video, "./temp/output.mp4", **arguments))
-                os.remove("./temp/video.mp4")
-                os.remove("./temp/audio.mp4")
-                os.rename("./temp/output.mp4", f"{save_path}/{yt.title}.mp4")
-                os.remove("./temp/output.mp4")
+                ffmpeg.run(ffmpeg.output(audio, video, current_path() + "/temp/output.mp4", **arguments))
+                os.remove(current_path() + "/temp/video.mp4")
+                os.remove(current_path() + "/temp/audio.mp4")
+                # os.rename(current_path() + "/temp/output.mp4", f"{save_path}/{yt.title}.mp4")
+                counter += 1  # Increment the counter
+                shutil.move(current_path() + "/temp/output.mp4", f"{save_path}/{counter}.{yt.title}.mp4")
+                os.remove(current_path() + "/temp/output.mp4")
                 print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
-            else:
-                yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path)
+                
+            elif yt.streams.filter(res="720p").first() is not None:
+                yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path, filename= current_path() + "/temp/output.mp4")
+                video = ffmpeg.input(current_path() + "/temp/output.mp4")
+                arguments = {
+                    'c:v': 'copy',
+                    'c:a': 'aac',
+                    'b:a': '128k',
+                }
+                counter += 1  # Increment the counter
+                ffmpeg.run(ffmpeg.output(video, f"{save_path}/{counter}.{yt.title}.mp4", **arguments))
+                os.remove(current_path() + "/temp/output.mp4")
                 print("✅  Finish Downloaded: " + short_link + " in 720p\n")
-        except:
-            print(f"🚫  Ohh! Video {short_link} is not available in 720p. Skipping...\n")
+            else:
+                print(f"🚫  Ohh! Video {short_link} is not available in 720p. Skipping...\n")
+                continue
+        except Exception as e:
+            print(f"🚫  Ohh! error: {e}\n")
             continue
         
-    print(f"🥳  All shorts downloaded in {os.getcwd()}/shorts\n")
+    print(f"🥳  All shorts downloaded in {current_path()}/shorts\n")
     print(f"🎉  Total shorts downloaded: {len(os.listdir(save_path))} | 💩 failed: {len(short_links) - len(os.listdir(save_path))}\n")
 
 
 channel = input("📺  Enter Channel URL: ")
-save_path = input("🗂  Enter Location Directory: ")
+save_path = input("📂  Enter Location Directory: ")
 shorts = get_shorts(channel)
 download_shorts(shorts, save_path)
