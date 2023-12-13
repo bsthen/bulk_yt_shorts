@@ -1,5 +1,6 @@
 import yt_dlp
 from pytube import YouTube
+import ffmpeg
 import os
 
 def get_shorts(channel):
@@ -56,14 +57,35 @@ def download_shorts(short_links, save_path):
     print(f"🤩  Found {len(short_links)} video shorts\n")
         
     for short_link in short_links:
+        ## check if video quality 1080p is available then download video and audio to temp and merge them by ffmpeg and delete temp files
         yt = YouTube(short_link)
+        
         try:
-            print("⬇️  Start Downloading: " + short_link + " in 720p\n")
-            yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path)
-            print("✅  Finish Downloaded: " + short_link + " in 720p\n")
+            if yt.streams.filter(res="1080p").first() != None:
+                print(f"⬇️  Start Downloading {short_link} in 1080p\n")
+                yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename="./temp/video.mp4")
+                yt.streams.filter(only_audio=True).first().download(filename="./temp/audio.mp4")
+                print("🔀  Merging video and audio...\n")
+                video = ffmpeg.input("./temp/video.mp4")
+                audio = ffmpeg.input("./temp/audio.mp4")
+                arguments = {
+                    'c:v': 'copy',
+                    'c:a': 'aac',
+                    'b:a': '128k'
+                }
+                ffmpeg.run(ffmpeg.output(audio, video, "./temp/output.mp4", **arguments))
+                os.remove("./temp/video.mp4")
+                os.remove("./temp/audio.mp4")
+                os.rename("./temp/output.mp4", f"{save_path}/{yt.title}.mp4")
+                os.remove("./temp/output.mp4")
+                print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
+            else:
+                yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path)
+                print("✅  Finish Downloaded: " + short_link + " in 720p\n")
         except:
-            print("🚫  Ohh! Video {short_link} is not available in 720p. Skipping...\n")
+            print(f"🚫  Ohh! Video {short_link} is not available in 720p. Skipping...\n")
             continue
+        
     print(f"🥳  All shorts downloaded in {os.getcwd()}/shorts\n")
     print(f"🎉  Total shorts downloaded: {len(os.listdir(save_path))} | 💩 failed: {len(short_links) - len(os.listdir(save_path))}\n")
 
