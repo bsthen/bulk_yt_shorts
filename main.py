@@ -5,10 +5,10 @@ import os
 def get_shorts(channel):
     
     if "youtube.com" not in channel:
-        print("Invalid youtube url. Exiting...")
+        print("😢 Invalid youtube url. Exiting...")
         exit()
     elif channel == "":
-        print("No channel id given. Exiting...")
+        print("😢 No channel id given. Exiting...")
         exit()
     elif "/@" in channel:
         channel = channel.split("/@")[1].split("/")[0]
@@ -41,7 +41,7 @@ def get_shorts(channel):
             short_links = [f"https://www.youtube.com/shorts/{video_id}" for video_id in video_ids]
             return short_links
         else:
-            print("No shorts found")
+            print("😢 No shorts found")
             exit()
   
 ## download shorts high quality
@@ -51,23 +51,27 @@ def download_shorts(short_links, save_path):
     save_path = save_path.replace("'", "")
     print(save_path)
     if not os.path.exists(save_path):
-        print("Error: Save path does not exist. Exiting...")
+        print("😵 Error: Save path does not exist. Exiting...")
         exit()
-    print(f"Downloading shorts in {os.getcwd()}/shorts")
+    ## found shorts
+    print(f"🤩 Found {len(short_links)} video shorts")
+    print(f"⬇️ Downloading shorts in {os.getcwd()}/shorts")
         
     for short_link in short_links:
         yt = YouTube(short_link)
         try:
-            print("Start Downloading: " + short_link)
+            print("👉 Start Downloading: " + short_link)
             yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path)
-            print("Finish Downloaded: " + short_link)
+            print("✅ Finish Downloaded: " + short_link)
         except:
-            print("Video {short_link} is not available in 720p. Skipping...")
+            print("🚫 Ohh! Video {short_link} is not available in 720p. Skipping...")
             continue
-    print(f"All shorts downloaded in {os.getcwd()}/shorts")
+    print(f"🥳 All shorts downloaded in {os.getcwd()}/shorts\n")
+    print(f"🎉 Total shorts downloaded: {len(os.listdir(save_path))}")
+    print(f"💩 Total shorts failed: {len(short_links) - len(os.listdir(save_path))}")
 
 
-channel = input("Enter Channel URL: ")
-save_path = input("Enter save path: ")
+channel = input("📺 Enter Channel URL: ")
+save_path = input("🗂 Enter Location Directory: ")
 shorts = get_shorts(channel)
 download_shorts(shorts, save_path)
