@@ -64,6 +64,8 @@ def download_shorts(short_links, save_path):
     if not os.path.exists(save_path):
         print("😵  Error: Save path does not exist. Exiting...\n")
         exit()
+    os.mkdir(save_path + "/temp")
+    temp_dir = save_path + "/temp"
     ## found shorts
     print(f"🤩  Found {len(short_links)} video shorts\n")
         
@@ -75,28 +77,27 @@ def download_shorts(short_links, save_path):
         try:
             if yt.streams.filter(res="1080p").first() is not None:
                 print(f"⬇️  Start Downloading {short_link} in 1080p\n")
-                yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename= current_path() + "/temp/video.mp4")
-                yt.streams.filter(only_audio=True).first().download(filename= current_path() + "/temp/audio.mp4")
+                yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename=temp_dir + "/video.mp4")
+                yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "/audio.mp4")
                 print("🔀  Merging video and audio...\n")
-                video = ffmpeg.input(current_path() + "/temp/video.mp4")
-                audio = ffmpeg.input(current_path() + "/temp/audio.mp4")
+                video = ffmpeg.input(temp_dir + "/video.mp4")
+                audio = ffmpeg.input(temp_dir + "/audio.mp4")
                 arguments = {
                     'c:v': 'copy',
                     'c:a': 'aac',
                     'b:a': '128k',
                 }
-                ffmpeg.run(ffmpeg.output(audio, video, current_path() + "/temp/output.mp4", **arguments))
-                os.remove(current_path() + "/temp/video.mp4")
-                os.remove(current_path() + "/temp/audio.mp4")
-                # os.rename(current_path() + "/temp/output.mp4", f"{save_path}/{yt.title}.mp4")
+                ffmpeg.run(ffmpeg.output(audio, video, temp_dir + "/output.mp4", **arguments))
+                os.remove(temp_dir + "/video.mp4")
+                os.remove(temp_dir + "/audio.mp4")
                 counter += 1  # Increment the counter
-                shutil.move(current_path() + "/temp/output.mp4", f"{save_path}/{counter}.{yt.title}.mp4")
-                os.remove(current_path() + "/temp/output.mp4")
+                shutil.move(temp_dir + "/output.mp4", f"{save_path}/{counter}.{yt.title}.mp4")
+                os.remove(temp_dir + "/output.mp4")
                 print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
                 
             elif yt.streams.filter(res="720p").first() is not None:
-                yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path, filename= current_path() + "/temp/output.mp4")
-                video = ffmpeg.input(current_path() + "/temp/output.mp4")
+                yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path, filename=temp_dir + "/output.mp4")
+                video = ffmpeg.input(temp_dir + "/output.mp4")
                 arguments = {
                     'c:v': 'copy',
                     'c:a': 'aac',
@@ -104,7 +105,7 @@ def download_shorts(short_links, save_path):
                 }
                 counter += 1  # Increment the counter
                 ffmpeg.run(ffmpeg.output(video, f"{save_path}/{counter}.{yt.title}.mp4", **arguments))
-                os.remove(current_path() + "/temp/output.mp4")
+                os.remove(temp_dir + "/output.mp4")
                 print("✅  Finish Downloaded: " + short_link + " in 720p\n")
             else:
                 print(f"🚫  Ohh! Video {short_link} is not available in 720p. Skipping...\n")
@@ -113,7 +114,8 @@ def download_shorts(short_links, save_path):
             print(f"🚫  Ohh! error: {e}\n")
             continue
         
-    print(f"🥳  All shorts downloaded in {current_path()}/shorts\n")
+    shutil.rmtree(temp_dir)
+    print(f"🥳  All shorts downloaded in {save_path}\n")
     print(f"🎉  Total shorts downloaded: {len(os.listdir(save_path))} | 💩 failed: {len(short_links) - len(os.listdir(save_path))}\n")
 
 
