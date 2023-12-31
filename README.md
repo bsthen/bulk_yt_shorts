@@ -1,4 +1,4 @@
-# Bulk Download YouTube Shorts Channel Only 720p
+# Bulk Download YouTube Shorts Channel Support 1080p And 720p
 
 ## Setup Project
 
