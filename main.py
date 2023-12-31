@@ -1,7 +1,23 @@
 import yt_dlp
 from pytube import YouTube
 import ffmpeg
-import shutil, os
+import shutil, os, re
+
+def sanitize_filename(filename):
+    # List of unsupported characters in file names
+    unsupported_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
+
+    # Replace unsupported characters with underscores
+    for char in unsupported_chars:
+        filename = filename.replace(char, '_')
+    
+    # Remove leading and trailing whitespaces
+    filename = filename.strip()
+
+    # Remove any sequence of underscores and replace with a single underscore
+    filename = re.sub('_+', '_', filename)
+
+    return filename
 
 def get_shorts(channel):
     
@@ -45,7 +61,7 @@ def get_shorts(channel):
             print("😢  No shorts found\n")
             exit()
           
-def download_shorts(short_links, save_path):
+def download_shorts(short_links, save_path, videos_per_folder=20):
     save_path = os.path.normpath(save_path)
     if not os.path.exists(save_path):
         print("😵  Error: Save path does not exist. Exiting...\n")
@@ -53,17 +69,24 @@ def download_shorts(short_links, save_path):
     temp_dir = os.path.join(save_path, "temp")
     if not os.path.exists(temp_dir):
         os.mkdir(temp_dir)
+        
     ## temp dir add slash for windows and linux
     if not temp_dir.endswith(os.sep):
         temp_dir += os.sep
+        
     ## found shorts
     print(f"🤩  Found {len(short_links)} video shorts\n")
+
+    folder_counter = 0
+    folder_path = os.path.join(save_path, str(folder_counter + 1))
+    if not os.path.exists(folder_path):
+        os.mkdir(folder_path)
         
-    counter = 0  # Initialize a counter for numbering the files
+    folder_video_counter = 1
+
     for short_link in short_links:
         ## check if video quality 1080p is available then download video and audio to temp and merge them by ffmpeg and delete temp files
         yt = YouTube(short_link)
-        
         try:
             if yt.streams.filter(res="1080p").first() is not None:
                 # Remove all files in the temp directory
@@ -84,8 +107,19 @@ def download_shorts(short_links, save_path):
                 ffmpeg.run(ffmpeg.output(audio, video, temp_dir + "output.mp4", **arguments))
                 os.remove(temp_dir + "video.mp4")
                 os.remove(temp_dir + "audio.mp4")
-                counter += 1  # Increment the counter
-                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(save_path, f"{counter}.{yt.title}.mp4"))
+                # Check the number of files in the current folder before moving a file
+                files_in_folder = len([f for f in os.listdir(folder_path) if f.endswith('.mp4')])
+                # If the number of files in the current folder exceeds or equals videos_per_folder, move to the next folder
+                if files_in_folder >= int(videos_per_folder):
+                    folder_counter += 1
+                    folder_path = os.path.join(save_path, str(folder_counter + 1))
+                    if not os.path.exists(folder_path):
+                        os.mkdir(folder_path)
+                    # Reset the counter for this new folder
+                    folder_video_counter = 1
+                # Increment the counter for the current folder
+                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{folder_video_counter}.{sanitize_filename(yt.title)}.mp4"))
+                folder_video_counter += 1
                 print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
                 
             elif yt.streams.filter(res="720p").first() is not None:
@@ -93,9 +127,20 @@ def download_shorts(short_links, save_path):
                 files = os.listdir(temp_dir)
                 for file in files:
                     os.remove(os.path.join(temp_dir, file))
-                yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path, filename=temp_dir + "output.mp4")
-                counter += 1  # Increment the counter
-                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(save_path, f"{counter}.{yt.title}.mp4"))
+                yt.streams.filter(file_extension='mp4', res="720p").first().download(filename=temp_dir + "output.mp4")
+                # Check the number of files in the current folder before moving a file
+                files_in_folder = len([f for f in os.listdir(folder_path) if f.endswith('.mp4')])
+                # If the number of files in the current folder exceeds or equals videos_per_folder, move to the next folder
+                if files_in_folder >= int(videos_per_folder):
+                    folder_counter += 1
+                    folder_path = os.path.join(save_path, str(folder_counter + 1))
+                    if not os.path.exists(folder_path):
+                        os.mkdir(folder_path)
+                    # Reset the counter for this new folder
+                    folder_video_counter = 1
+                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{folder_video_counter}.{sanitize_filename(yt.title)}.mp4"))
+                # Increment the counter for the current folder
+                folder_video_counter += 1
                 print("✅  Finish Downloaded: " + short_link + " in 720p\n")
             else:
                 print(f"🚫  Ohh! Video {short_link} is not available in 720p. Skipping...\n")
@@ -109,7 +154,8 @@ def download_shorts(short_links, save_path):
     print(f"🎉  Total shorts downloaded: {len(os.listdir(save_path))} | 💩 failed: {len(short_links) - len(os.listdir(save_path))}\n")
 
 
-channel = input("📺  Enter Channel URL: ")
-save_path = input("📂  Enter Location Directory: ")
+channel = input("📺  Enter Channel URL: Ex. https://www.youtube.com/@123/shorts\n --> ")
+save_path = input("\n📂  Enter Location Directory: Ex. D:\\Download\\Short\\\n --> ")
+videos_per_folder = input("\n📁  Enter Number #Videos Per Folder: Ex. 20\n --> ")
 shorts = get_shorts(channel)
-download_shorts(shorts, save_path)
+download_shorts(shorts, save_path, videos_per_folder)
