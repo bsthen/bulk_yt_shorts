@@ -1,10 +1,7 @@
 import yt_dlp
 from pytube import YouTube
 import ffmpeg
-import shutil, os, platform
-
-def is_windows():
-    return platform.system() == "Windows"
+import shutil, os
 
 def get_shorts(channel):
     
@@ -47,25 +44,18 @@ def get_shorts(channel):
         else:
             print("😢  No shorts found\n")
             exit()
-  
-## download shorts high quality
-def current_path():
-    if is_windows():
-        return os.getcwd().replace("\\", "/")
-    else:
-        return os.getcwd()
-
           
 def download_shorts(short_links, save_path):
-    save_path = save_path.replace('"', '')
-    save_path = save_path.replace("'", "")
-    if is_windows():
-        save_path = save_path.replace("\\", "/")
+    save_path = os.path.normpath(save_path)
     if not os.path.exists(save_path):
         print("😵  Error: Save path does not exist. Exiting...\n")
         exit()
-    os.mkdir(save_path + "/temp")
-    temp_dir = save_path + "/temp"
+    temp_dir = os.path.join(save_path, "temp")
+    if not os.path.exists(temp_dir):
+        os.mkdir(temp_dir)
+    ## temp dir add slash for windows and linux
+    if not temp_dir.endswith(os.sep):
+        temp_dir += os.sep
     ## found shorts
     print(f"🤩  Found {len(short_links)} video shorts\n")
         
@@ -76,36 +66,36 @@ def download_shorts(short_links, save_path):
         
         try:
             if yt.streams.filter(res="1080p").first() is not None:
+                # Remove all files in the temp directory
+                files = os.listdir(temp_dir)
+                for file in files:
+                    os.remove(os.path.join(temp_dir, file))
                 print(f"⬇️  Start Downloading {short_link} in 1080p\n")
-                yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename=temp_dir + "/video.mp4")
-                yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "/audio.mp4")
+                yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename=temp_dir + "video.mp4")
+                yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "audio.mp4")
                 print("🔀  Merging video and audio...\n")
-                video = ffmpeg.input(temp_dir + "/video.mp4")
-                audio = ffmpeg.input(temp_dir + "/audio.mp4")
+                video = ffmpeg.input(temp_dir + "video.mp4")
+                audio = ffmpeg.input(temp_dir + "audio.mp4")
                 arguments = {
                     'c:v': 'copy',
                     'c:a': 'aac',
                     'b:a': '128k',
                 }
-                ffmpeg.run(ffmpeg.output(audio, video, temp_dir + "/output.mp4", **arguments))
-                os.remove(temp_dir + "/video.mp4")
-                os.remove(temp_dir + "/audio.mp4")
+                ffmpeg.run(ffmpeg.output(audio, video, temp_dir + "output.mp4", **arguments))
+                os.remove(temp_dir + "video.mp4")
+                os.remove(temp_dir + "audio.mp4")
                 counter += 1  # Increment the counter
-                shutil.move(temp_dir + "/output.mp4", f"{save_path}/{counter}.{yt.title}.mp4")
-                os.remove(temp_dir + "/output.mp4")
+                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(save_path, f"{counter}.{yt.title}.mp4"))
                 print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
                 
             elif yt.streams.filter(res="720p").first() is not None:
-                yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path, filename=temp_dir + "/output.mp4")
-                video = ffmpeg.input(temp_dir + "/output.mp4")
-                arguments = {
-                    'c:v': 'copy',
-                    'c:a': 'aac',
-                    'b:a': '128k',
-                }
+                # Remove all files in the temp directory
+                files = os.listdir(temp_dir)
+                for file in files:
+                    os.remove(os.path.join(temp_dir, file))
+                yt.streams.filter(file_extension='mp4', res="720p").first().download(save_path, filename=temp_dir + "output.mp4")
                 counter += 1  # Increment the counter
-                ffmpeg.run(ffmpeg.output(video, f"{save_path}/{counter}.{yt.title}.mp4", **arguments))
-                os.remove(temp_dir + "/output.mp4")
+                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(save_path, f"{counter}.{yt.title}.mp4"))
                 print("✅  Finish Downloaded: " + short_link + " in 720p\n")
             else:
                 print(f"🚫  Ohh! Video {short_link} is not available in 720p. Skipping...\n")
