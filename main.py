@@ -210,7 +210,7 @@ def main():
         
         if choice == "1":
             channel = input("\n📺  Enter Channel URL: Ex. https://www.youtube.com/@123/shorts\n --> ")
-            if not channel.startswith("https://www.youtube.com/") or not channel.startswith("https://youtube.com/"):
+            if "youtube.com" not in channel:
                 print("😢  Invalid youtube url. Exiting...\n")
                 input("Press any key to exit...")
                 exit()
@@ -245,8 +245,8 @@ def main():
                 exit()
             with open(channel_list, "r") as f:
                 for channel in f:
-                    if not channel.startswith("https://www.youtube.com/") or not channel.startswith("https://youtube.com/"):
-                        print("😢  Invalid YouTube URL! Make sure YouTube Channel URL Are Correct And 1 Channel URL Per Line.\n")
+                    if "youtube.com" not in channel:
+                        print("😢  Invalid YouTube Channel! Make Sure All URL Are Correct And 1 Channel URL Per Line.\n")
                         input("Press any key to exit...")
                         exit()
                     ## get channel id and create folder
