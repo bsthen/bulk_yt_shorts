@@ -191,7 +191,7 @@ def welcome_message():
     | |_) | |_| | |   <   ____) | | | | (_) | |  | |_\__ \ | |__| | (_) \ V  V /| | | | | (_) | (_| | (_| |  __/ |   
     |____/ \__,_|_|_|\_\ |_____/|_| |_|\___/|_|   \__|___/ |_____/ \___/ \_/\_/ |_| |_|_|\___/ \__,_|\__,_|\___|_|   
     
-                                                                                                     v1.0.9 | @bsthen                                                                                                              
+                                                                                                     v1.0.10 | @bsthen                                                                                                              
                                                                                                                   
     """
     print(large_text)
@@ -210,28 +210,53 @@ def main():
         
         if choice == "1":
             channel = input("\n📺  Enter Channel URL: Ex. https://www.youtube.com/@123/shorts\n --> ")
+            if not channel.startswith("https://www.youtube.com/") or not channel.startswith("https://youtube.com/"):
+                print("😢  Invalid youtube url. Exiting...\n")
+                input("Press any key to exit...")
+                exit()
             save_path = input("\n📂  Enter Download Directory: Ex. D:\\Download\\Short\\\n --> ")
+            if not os.path.exists(save_path):
+                print("😵  Error: Save path does not exist. Exiting...\n")
+                input("Press any key to exit...")
+                exit()
             videos_per_folder = input("\n📁  Enter Number #Videos Per Folder: Ex. 20\n --> ")
+            if not videos_per_folder.isdigit():
+                print("😢  Invalid number. Exiting...\n")
+                input("Press any key to exit...")
+                exit()
             shorts = get_shorts(channel)
             download_shorts(shorts, save_path, videos_per_folder)
             break
         elif choice == "2":
             channel_list = input("\n📺  Enter A Batch File.txt: Ex. D:\\Download\\Short\\AnyName.txt\n --> ")
+            if not os.path.exists(channel_list):
+                print("😢  Invalid batch file. Exiting...\n")
+                input("Press any key to exit...")
+                exit()
             save_path = input("\n📂  Enter Download Directory: Ex. D:\\Download\\Short\\\n --> ")
+            if not os.path.exists(save_path):
+                print("😵  Error: Save path does not exist. Exiting...\n")
+                input("Press any key to exit...")
+                exit()
             videos_per_folder = input("\n📁  Enter Number #Videos Per Folder: Ex. 20\n --> ")
+            if not videos_per_folder.isdigit():
+                print("😢  Invalid number. Exiting...\n")
+                input("Press any key to exit...")
+                exit()
             with open(channel_list, "r") as f:
                 for channel in f:
                     ## get channel id and create folder
                     channel_id = get_channel_id(channel)
                     ## create folder
-                    save_path = os.path.join(save_path, channel_id)
-                    if not os.path.exists(save_path):
-                        os.mkdir(save_path)
+                    path_channel = os.path.join(save_path, channel_id)
+                    if not os.path.exists(path_channel):
+                        os.mkdir(path_channel)
                     shorts = get_shorts(channel)
-                    download_shorts(shorts, save_path, videos_per_folder)
+                    download_shorts(shorts, path_channel, videos_per_folder)
             break
         else:
             print("😢  Invalid choice. Exiting...\n")
+            input("Press any key to exit...")
             exit()
 
 if __name__ == "__main__":
