@@ -19,6 +19,35 @@ def sanitize_filename(filename):
 
     return filename
 
+def get_channel_id(channel):
+    if "youtube.com" not in channel:
+        print("😢  Invalid youtube url. Exiting...\n")
+        exit()
+    elif channel == "":
+        print("😢  No channel id given. Exiting...\n")
+        exit()
+    elif "/@" in channel:
+        channel = channel.split("/@")[1].split("/")[0]
+        channel_url = f"https://www.youtube.com/@{channel}/shorts"
+        return channel
+    else:
+        channel = channel.split("/about")[0]
+        channel = channel.split("/channel/")[1]
+        channel = channel.split("/c/")[1]
+        channel = channel.split("/user/")[1]
+        channel = channel.split("/community")[0]
+        channel = channel.split("/featured")[0]
+        channel = channel.split("/videos")[0]
+        channel = channel.split("/discussion")[0]
+        channel = channel.split("/playlists")[0]
+        channel = channel.split("/channels")[0]
+        channel = channel.split("/feed")[0]
+        channel = channel.split("/live")[0]
+        channel = channel.split("/about")[0]
+        channel = channel.split("/stream")[0]
+        channel = channel.split("/playlists")[0]
+    return channel
+
 def get_shorts(channel):
     
     if "youtube.com" not in channel:
@@ -118,7 +147,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
                     # Reset the counter for this new folder
                     folder_video_counter = 1
                 # Increment the counter for the current folder
-                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{folder_video_counter}.{sanitize_filename(yt.title)}.mp4"))
+                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}.mp4"))
                 folder_video_counter += 1
                 print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
                 
@@ -138,7 +167,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
                         os.mkdir(folder_path)
                     # Reset the counter for this new folder
                     folder_video_counter = 1
-                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{folder_video_counter}.{sanitize_filename(yt.title)}.mp4"))
+                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}.mp4"))
                 # Increment the counter for the current folder
                 folder_video_counter += 1
                 print("✅  Finish Downloaded: " + short_link + " in 720p\n")
@@ -153,9 +182,57 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
     print(f"🥳  All shorts downloaded in {save_path}\n")
     print(f"🎉  Total shorts downloaded: {len(os.listdir(save_path))} | 💩 failed: {len(short_links) - len(os.listdir(save_path))}\n")
 
+def welcome_message():
+    large_text = """
+     ____        _ _       _____ _                _         _____                      _                 _           
+    |  _ \      | | |     / ____| |              | |       |  __ \                    | |               | |          
+    | |_) |_   _| | | __ | (___ | |__   ___  _ __| |_ ___  | |  | | _____      ___ __ | | ___   __ _  __| | ___ _ __ 
+    |  _ <| | | | | |/ /  \___ \| '_ \ / _ \| '__| __/ __| | |  | |/ _ \ \ /\ / / '_ \| |/ _ \ / _` |/ _` |/ _ \ '__|
+    | |_) | |_| | |   <   ____) | | | | (_) | |  | |_\__ \ | |__| | (_) \ V  V /| | | | | (_) | (_| | (_| |  __/ |   
+    |____/ \__,_|_|_|\_\ |_____/|_| |_|\___/|_|   \__|___/ |_____/ \___/ \_/\_/ |_| |_|_|\___/ \__,_|\__,_|\___|_|   
+    
+                                                                                                     v1.0.9 | @bsthen                                                                                                              
+                                                                                                                  
+    """
+    print(large_text)
 
-channel = input("📺  Enter Channel URL: Ex. https://www.youtube.com/@123/shorts\n --> ")
-save_path = input("\n📂  Enter Location Directory: Ex. D:\\Download\\Short\\\n --> ")
-videos_per_folder = input("\n📁  Enter Number #Videos Per Folder: Ex. 20\n --> ")
-shorts = get_shorts(channel)
-download_shorts(shorts, save_path, videos_per_folder)
+def main():
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        welcome_message()
+        
+        print("Choose an option:\n")
+        print("☝️ 1. Download shorts from a Channel URL")
+        print("✌️ 2. Download shorts from a batch file.txt\n")
+        print("🚪 Press any other key to exit\n")
+        
+        choice = input("👉  Enter your choice: ").strip().lower()
+        
+        if choice == "1":
+            channel = input("\n📺  Enter Channel URL: Ex. https://www.youtube.com/@123/shorts\n --> ")
+            save_path = input("\n📂  Enter Download Directory: Ex. D:\\Download\\Short\\\n --> ")
+            videos_per_folder = input("\n📁  Enter Number #Videos Per Folder: Ex. 20\n --> ")
+            shorts = get_shorts(channel)
+            download_shorts(shorts, save_path, videos_per_folder)
+            break
+        elif choice == "2":
+            channel_list = input("\n📺  Enter A Batch File.txt: Ex. D:\\Download\\Short\\AnyName.txt\n --> ")
+            save_path = input("\n📂  Enter Download Directory: Ex. D:\\Download\\Short\\\n --> ")
+            videos_per_folder = input("\n📁  Enter Number #Videos Per Folder: Ex. 20\n --> ")
+            with open(channel_list, "r") as f:
+                for channel in f:
+                    ## get channel id and create folder
+                    channel_id = get_channel_id(channel)
+                    ## create folder
+                    save_path = os.path.join(save_path, channel_id)
+                    if not os.path.exists(save_path):
+                        os.mkdir(save_path)
+                    shorts = get_shorts(channel)
+                    download_shorts(shorts, save_path, videos_per_folder)
+            break
+        else:
+            print("😢  Invalid choice. Exiting...\n")
+            exit()
+
+if __name__ == "__main__":
+    main()
