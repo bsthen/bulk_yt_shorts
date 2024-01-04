@@ -22,9 +22,11 @@ def sanitize_filename(filename):
 def get_channel_id(channel):
     if "youtube.com" not in channel:
         print("😢  Invalid youtube url. Exiting...\n")
+        input("Press any key to exit...")
         exit()
     elif channel == "":
         print("😢  No channel id given. Exiting...\n")
+        input("Press any key to exit...")
         exit()
     elif "/@" in channel:
         channel = channel.split("/@")[1].split("/")[0]
@@ -51,10 +53,12 @@ def get_channel_id(channel):
 def get_shorts(channel):
     
     if "youtube.com" not in channel:
-        print("😢  Invalid youtube url. Exiting...\n")
+        print("😢  Invalid youtube url.\n")
+        input("Press any key to exit...")
         exit()
     elif channel == "":
-        print("😢  No channel id given. Exiting...\n")
+        print("😢  No channel id given.\n")
+        input("Press any key to exit...")
         exit()
     elif "/@" in channel:
         channel = channel.split("/@")[1].split("/")[0]
@@ -88,12 +92,14 @@ def get_shorts(channel):
             return short_links
         else:
             print("😢  No shorts found\n")
+            input("Press any key to exit...")
             exit()
           
 def download_shorts(short_links, save_path, videos_per_folder=20):
     save_path = os.path.normpath(save_path)
     if not os.path.exists(save_path):
-        print("😵  Error: Save path does not exist. Exiting...\n")
+        print("😵  Error: Save path does not exist.\n")
+        input("Press any key to exit...")
         exit()
     temp_dir = os.path.join(save_path, "temp")
     if not os.path.exists(temp_dir):
@@ -147,7 +153,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
                     # Reset the counter for this new folder
                     folder_video_counter = 1
                 # Increment the counter for the current folder
-                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}.mp4"))
+                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"))
                 folder_video_counter += 1
                 print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
                 
@@ -167,7 +173,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
                         os.mkdir(folder_path)
                     # Reset the counter for this new folder
                     folder_video_counter = 1
-                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}.mp4"))
+                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"))
                 # Increment the counter for the current folder
                 folder_video_counter += 1
                 print("✅  Finish Downloaded: " + short_link + " in 720p\n")
@@ -179,8 +185,11 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
             continue
         
     shutil.rmtree(temp_dir)
+    
     print(f"🥳  All shorts downloaded in {save_path}\n")
-    print(f"🎉  Total shorts downloaded: {len(os.listdir(save_path))} | 💩 failed: {len(short_links) - len(os.listdir(save_path))}\n")
+    print(f"🎉  Total shorts downloaded: {int(folder_video_counter)} | 💩 failed: {len(short_links) - int(folder_video_counter)}\n")
+    input("Press any key to exit...")
+    exit()
 
 def welcome_message():
     large_text = """
@@ -191,7 +200,7 @@ def welcome_message():
     | |_) | |_| | |   <   ____) | | | | (_) | |  | |_\__ \ | |__| | (_) \ V  V /| | | | | (_) | (_| | (_| |  __/ |   
     |____/ \__,_|_|_|\_\ |_____/|_| |_|\___/|_|   \__|___/ |_____/ \___/ \_/\_/ |_| |_|_|\___/ \__,_|\__,_|\___|_|   
     
-                                                                                                     v1.0.10 | @bsthen                                                                                                              
+                                                                                                     v1.0.11 | @bsthen                                                                                                              
                                                                                                                   
     """
     print(large_text)
@@ -211,17 +220,17 @@ def main():
         if choice == "1":
             channel = input("\n📺  Enter Channel URL: Ex. https://www.youtube.com/@123/shorts\n --> ")
             if "youtube.com" not in channel:
-                print("😢  Invalid youtube url. Exiting...\n")
+                print("😢  Invalid youtube url.\n")
                 input("Press any key to exit...")
                 exit()
             save_path = input("\n📂  Enter Download Directory: Ex. D:\\Download\\Short\\\n --> ")
             if not os.path.exists(save_path):
-                print("😵  Error: Save path does not exist. Exiting...\n")
+                print("😵  Error: Save path does not exist.\n")
                 input("Press any key to exit...")
                 exit()
             videos_per_folder = input("\n📁  Enter Number #Videos Per Folder: Ex. 20\n --> ")
             if not videos_per_folder.isdigit():
-                print("😢  Invalid number. Exiting...\n")
+                print("😢  Invalid Number.\n")
                 input("Press any key to exit...")
                 exit()
             shorts = get_shorts(channel)
@@ -230,17 +239,17 @@ def main():
         elif choice == "2":
             channel_list = input("\n📺  Enter A Batch File.txt: Ex. D:\\Download\\Short\\AnyName.txt\n --> ")
             if not os.path.exists(channel_list):
-                print("😢  Invalid batch file. Exiting...\n")
+                print("😢  Invalid batch file.\n")
                 input("Press any key to exit...")
                 exit()
             save_path = input("\n📂  Enter Download Directory: Ex. D:\\Download\\Short\\\n --> ")
             if not os.path.exists(save_path):
-                print("😵  Error: Save path does not exist. Exiting...\n")
+                print("😵  Error: Save path does not exist.\n")
                 input("Press any key to exit...")
                 exit()
             videos_per_folder = input("\n📁  Enter Number #Videos Per Folder: Ex. 20\n --> ")
             if not videos_per_folder.isdigit():
-                print("😢  Invalid number. Exiting...\n")
+                print("😢  Invalid number.\n")
                 input("Press any key to exit...")
                 exit()
             with open(channel_list, "r") as f:
