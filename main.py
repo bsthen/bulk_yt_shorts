@@ -188,8 +188,6 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
     
     print(f"🥳  All shorts downloaded in {save_path}\n")
     print(f"🎉  Total shorts downloaded: {int(folder_video_counter)} | 💩 failed: {len(short_links) - int(folder_video_counter)}\n")
-    input("Press any key to exit...")
-    exit()
 
 def welcome_message():
     large_text = """
@@ -274,3 +272,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    input("Press any key to exit...")
+    exit()
