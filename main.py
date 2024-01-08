@@ -1,7 +1,30 @@
 import yt_dlp
 from pytube import YouTube
-import ffmpeg
 import shutil, os, re
+from moviepy.editor import VideoFileClip, AudioFileClip
+from moviepy import config
+import moviepy.video.fx.all as vfx
+import platform
+from multiprocessing import cpu_count
+
+def set_ffmpeg_path():
+    current_os = platform.system()
+    
+    if current_os == "Windows":
+        ffmpeg_path = './ffmpeg/windows/ffmpeg.exe'
+        ffmpeg_path = os.path.abspath(ffmpeg_path)
+    elif current_os == "Darwin":  # Darwin for macOS
+        ffmpeg_path = './ffmpeg/macos/ffmpeg'
+        ffmpeg_path = os.path.abspath(ffmpeg_path)
+    elif current_os == "Linux":
+        ffmpeg_path = './ffmpeg//linux/ffmpeg'
+        ffmpeg_path = os.path.abspath(ffmpeg_path)
+    else:
+        raise Exception("Unsupported operating system")
+    
+    # Set the FFmpeg binary path for MoviePy
+    config.change_settings({"FFMPEG_BINARY": ffmpeg_path})
+
 
 def sanitize_filename(filename):
     # List of unsupported characters in file names
@@ -95,7 +118,8 @@ def get_shorts(channel):
             input("Press any key to exit...")
             exit()
           
-def download_shorts(short_links, save_path, videos_per_folder=20):
+def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, flip=False):
+    set_ffmpeg_path()
     save_path = os.path.normpath(save_path)
     if not os.path.exists(save_path):
         print("😵  Error: Save path does not exist.\n")
@@ -130,18 +154,22 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
                     os.remove(os.path.join(temp_dir, file))
                 print(f"⬇️  Start Downloading {short_link} in 1080p\n")
                 yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename=temp_dir + "video.mp4")
-                yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "audio.mp4")
+                # yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "audio.mp4")
+                # download audio without .mp3
+                yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "audio.mp3")
                 print("🔀  Merging video and audio...\n")
-                video = ffmpeg.input(temp_dir + "video.mp4")
-                audio = ffmpeg.input(temp_dir + "audio.mp4")
-                arguments = {
-                    'c:v': 'copy',
-                    'c:a': 'aac',
-                    'b:a': '128k',
-                }
-                ffmpeg.run(ffmpeg.output(audio, video, temp_dir + "output.mp4", **arguments))
-                os.remove(temp_dir + "video.mp4")
-                os.remove(temp_dir + "audio.mp4")
+                # video = ffmpeg.input(temp_dir + "video.mp4")
+                video = VideoFileClip(temp_dir + "video.mp4")
+                # audio = ffmpeg.input(temp_dir + "audio.mp4")
+                audio = AudioFileClip(temp_dir + "audio.mp3")
+                # ffmpeg.run(ffmpeg.output(audio, video, temp_dir + "output.mp4", **arguments))
+                video = video.set_audio(audio)
+                if speed is not None:
+                    video = video.fx(vfx.speedx, float(speed))
+                if flip is True:
+                    video = video.fx(vfx.mirror_x)
+                # os.remove(temp_dir + "video.mp4")
+                # os.remove(temp_dir + "audio.mp4")
                 # Check the number of files in the current folder before moving a file
                 files_in_folder = len([f for f in os.listdir(folder_path) if f.endswith('.mp4')])
                 # If the number of files in the current folder exceeds or equals videos_per_folder, move to the next folder
@@ -153,16 +181,23 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
                     # Reset the counter for this new folder
                     folder_video_counter = 1
                 # Increment the counter for the current folder
-                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"))
+                # shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"))
+                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"), verbose= False, codec="libx264", audio_codec="aac", logger= None, threads= cpu_count())
                 folder_video_counter += 1
                 print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
                 
             elif yt.streams.filter(res="720p").first() is not None:
                 # Remove all files in the temp directory
-                files = os.listdir(temp_dir)
-                for file in files:
-                    os.remove(os.path.join(temp_dir, file))
+                # files = os.listdir(temp_dir)
+                # for file in files:
+                #     os.remove(os.path.join(temp_dir, file))
                 yt.streams.filter(file_extension='mp4', res="720p").first().download(filename=temp_dir + "output.mp4")
+                video = VideoFileClip(temp_dir + "output.mp4")
+                if speed is not None:
+                    video = video.fx(vfx.speedx, float(speed))
+                if flip is True:
+                    video = video.fx(vfx.mirror_x)
+                
                 # Check the number of files in the current folder before moving a file
                 files_in_folder = len([f for f in os.listdir(folder_path) if f.endswith('.mp4')])
                 # If the number of files in the current folder exceeds or equals videos_per_folder, move to the next folder
@@ -173,7 +208,8 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
                         os.mkdir(folder_path)
                     # Reset the counter for this new folder
                     folder_video_counter = 1
-                shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"))
+                # shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"))
+                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"),verbose= False, codec="libx264", audio_codec="aac", logger= None, threads= cpu_count())
                 # Increment the counter for the current folder
                 folder_video_counter += 1
                 print("✅  Finish Downloaded: " + short_link + " in 720p\n")
@@ -187,7 +223,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20):
     shutil.rmtree(temp_dir)
     
     print(f"🥳  All shorts downloaded in {save_path}\n")
-    print(f"🎉  Total shorts downloaded: {int(folder_video_counter)} | 💩 failed: {len(short_links) - int(folder_video_counter)}\n")
+    # print(f"🎉  Total shorts downloaded: {int(folder_video_counter)} | 💩 failed: {len(short_links) - int(folder_video_counter)}\n")
 
 def welcome_message():
     large_text = """
@@ -231,8 +267,23 @@ def main():
                 print("😢  Invalid Number.\n")
                 input("Press any key to exit...")
                 exit()
+            add_speed = input("\n🏃  Do you want to add speed? (y/n): ").strip().lower()
+            if add_speed == "y":
+                speed = input("\n🏃  Enter Speed: Ex. 1.2\n --> ")
+                speed = float(speed)
+                if not isinstance(speed, float or int):
+                    print("😢  Invalid Speed.\n")
+                    input("Press any key to exit...")
+                    exit()
+            else:
+                speed = None
+            add_flip = input("\n🔄  Do you want to add flip? (y/n): ").strip().lower()
+            if add_flip == "y":
+                flip = True
+            else:
+                flip = False
             shorts = get_shorts(channel)
-            download_shorts(shorts, save_path, videos_per_folder)
+            download_shorts(shorts, save_path, videos_per_folder, speed, flip)
             break
         elif choice == "2":
             channel_list = input("\n📺  Enter A Batch File.txt: Ex. D:\\Download\\Short\\AnyName.txt\n --> ")
@@ -250,6 +301,20 @@ def main():
                 print("😢  Invalid number.\n")
                 input("Press any key to exit...")
                 exit()
+            add_speed = input("\n🏃  Do you want to add speed? (y/n): ").strip().lower()
+            if add_speed == "y":
+                speed = input("\n🏃  Enter Speed: Ex. 1.2\n --> ")
+                if not speed.isdigit():
+                    print("😢  Invalid Speed.\n")
+                    input("Press any key to exit...")
+                    exit()
+            else:
+                speed = None
+            add_flip = input("\n🔄  Do you want to add flip? (y/n): ").strip().lower()
+            if add_flip == "y":
+                flip = True
+            else:
+                flip = False
             with open(channel_list, "r") as f:
                 for channel in f:
                     if "youtube.com" not in channel:
@@ -263,7 +328,7 @@ def main():
                     if not os.path.exists(path_channel):
                         os.mkdir(path_channel)
                     shorts = get_shorts(channel)
-                    download_shorts(shorts, path_channel, videos_per_folder)
+                    download_shorts(shorts, path_channel, videos_per_folder, speed, flip)
             break
         else:
             print("😢  Invalid choice. Exiting...\n")

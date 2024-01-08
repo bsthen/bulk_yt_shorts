@@ -1,4 +1,4 @@
 yt_dlp
 pytube
-ffmpeg-python
+moviepy
 pyinstaller
