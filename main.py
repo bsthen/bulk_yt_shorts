@@ -171,7 +171,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
                 print(f"⬇️  Start Downloading {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 yt.streams.filter(file_extension='mp4', res="720p").first().download(filename=temp_dir + "output.mp4")
                 print(f"✅  Finish Downloaded: {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
-                print(f"✂️ Editing Video {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
+                print(f"✂️ Editing Video {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 video = VideoFileClip(temp_dir + "output.mp4")
                 if speed is not None:
                     video = video.fx(vfx.speedx, float(speed))
