@@ -6,38 +6,35 @@ from moviepy import config
 import moviepy.video.fx.all as vfx
 import platform
 from multiprocessing import cpu_count
+from  datetime import datetime
 
 def set_ffmpeg_path():
     current_os = platform.system()
     
-    if current_os == "Windows":
-        ffmpeg_path = './ffmpeg/windows/ffmpeg.exe'
-        ffmpeg_path = os.path.abspath(ffmpeg_path)
-    elif current_os == "Darwin":  # Darwin for macOS
-        ffmpeg_path = './ffmpeg/macos/ffmpeg'
-        ffmpeg_path = os.path.abspath(ffmpeg_path)
-    elif current_os == "Linux":
-        ffmpeg_path = './ffmpeg//linux/ffmpeg'
-        ffmpeg_path = os.path.abspath(ffmpeg_path)
-    else:
-        raise Exception("Unsupported operating system")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    ffmpeg_dir = os.path.join(script_dir, "ffmpeg")
     
-    # Set the FFmpeg binary path for MoviePy
+    # if current_os == "Windows":
+    #     ffmpeg_path = os.path.join(ffmpeg_dir, 'windows', 'ffmpeg.exe')
+    # elif current_os == "Darwin":
+    #     ffmpeg_path = os.path.join(ffmpeg_dir, 'macos', 'ffmpeg')
+    # elif current_os == "Linux":
+    #     ffmpeg_path = os.path.join(ffmpeg_dir, 'linux', 'ffmpeg')
+    # else:
+    #     raise Exception("Unsupported operating system")
+    ffmpeg_path = os.path.join(ffmpeg_dir, 'ffmpeg.exe')
+    
     config.change_settings({"FFMPEG_BINARY": ffmpeg_path})
 
 
 def sanitize_filename(filename):
-    # List of unsupported characters in file names
     unsupported_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
 
-    # Replace unsupported characters with underscores
     for char in unsupported_chars:
         filename = filename.replace(char, '_')
     
-    # Remove leading and trailing whitespaces
     filename = filename.strip()
 
-    # Remove any sequence of underscores and replace with a single underscore
     filename = re.sub('_+', '_', filename)
 
     return filename
@@ -86,7 +83,6 @@ def get_shorts(channel):
     elif "/@" in channel:
         channel = channel.split("/@")[1].split("/")[0]
         channel_url = f"https://www.youtube.com/@{channel}/shorts"
-        # print("Channel url: " + channel_url)
     else:
         channel = channel.split("/about")[0]
         channel = channel.split("/channel/")[1]
@@ -129,11 +125,9 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
     if not os.path.exists(temp_dir):
         os.mkdir(temp_dir)
         
-    ## temp dir add slash for windows and linux
     if not temp_dir.endswith(os.sep):
         temp_dir += os.sep
         
-    ## found shorts
     print(f"🤩  Found {len(short_links)} video shorts\n")
 
     folder_counter = 0
@@ -144,75 +138,55 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
     folder_video_counter = 1
 
     for short_link in short_links:
-        ## check if video quality 1080p is available then download video and audio to temp and merge them by ffmpeg and delete temp files
         yt = YouTube(short_link)
         try:
             if yt.streams.filter(res="1080p").first() is not None:
-                # Remove all files in the temp directory
                 files = os.listdir(temp_dir)
                 for file in files:
                     os.remove(os.path.join(temp_dir, file))
-                print(f"⬇️  Start Downloading {short_link} in 1080p\n")
+                print(f"⬇️  Start Downloading {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename=temp_dir + "video.mp4")
-                # yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "audio.mp4")
-                # download audio without .mp3
                 yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "audio.mp3")
-                print("🔀  Merging video and audio...\n")
-                # video = ffmpeg.input(temp_dir + "video.mp4")
+                print(f"✅  Finish Downloaded: {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
+                print(f"✂️ Editing Video {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 video = VideoFileClip(temp_dir + "video.mp4")
-                # audio = ffmpeg.input(temp_dir + "audio.mp4")
                 audio = AudioFileClip(temp_dir + "audio.mp3")
-                # ffmpeg.run(ffmpeg.output(audio, video, temp_dir + "output.mp4", **arguments))
                 video = video.set_audio(audio)
                 if speed is not None:
                     video = video.fx(vfx.speedx, float(speed))
                 if flip is True:
                     video = video.fx(vfx.mirror_x)
-                # os.remove(temp_dir + "video.mp4")
-                # os.remove(temp_dir + "audio.mp4")
-                # Check the number of files in the current folder before moving a file
                 files_in_folder = len([f for f in os.listdir(folder_path) if f.endswith('.mp4')])
-                # If the number of files in the current folder exceeds or equals videos_per_folder, move to the next folder
                 if files_in_folder >= int(videos_per_folder):
                     folder_counter += 1
                     folder_path = os.path.join(save_path, str(folder_counter + 1))
                     if not os.path.exists(folder_path):
                         os.mkdir(folder_path)
-                    # Reset the counter for this new folder
                     folder_video_counter = 1
-                # Increment the counter for the current folder
-                # shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"))
-                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"), verbose= False, codec="libx264", audio_codec="aac", logger= None, threads= cpu_count())
+                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"), verbose= False, codec="libx264", audio_codec="aac", logger= None, threads=cpu_count())
                 folder_video_counter += 1
-                print("✅  Finish Downloaded: " + short_link + " in 1080p\n")
+                print(f"✅  Finish Video: {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 
             elif yt.streams.filter(res="720p").first() is not None:
-                # Remove all files in the temp directory
-                # files = os.listdir(temp_dir)
-                # for file in files:
-                #     os.remove(os.path.join(temp_dir, file))
+                print(f"⬇️  Start Downloading {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 yt.streams.filter(file_extension='mp4', res="720p").first().download(filename=temp_dir + "output.mp4")
+                print(f"✅  Finish Downloaded: {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
+                print(f"✂️ Editing Video {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 video = VideoFileClip(temp_dir + "output.mp4")
                 if speed is not None:
                     video = video.fx(vfx.speedx, float(speed))
                 if flip is True:
                     video = video.fx(vfx.mirror_x)
-                
-                # Check the number of files in the current folder before moving a file
                 files_in_folder = len([f for f in os.listdir(folder_path) if f.endswith('.mp4')])
-                # If the number of files in the current folder exceeds or equals videos_per_folder, move to the next folder
                 if files_in_folder >= int(videos_per_folder):
                     folder_counter += 1
                     folder_path = os.path.join(save_path, str(folder_counter + 1))
                     if not os.path.exists(folder_path):
                         os.mkdir(folder_path)
-                    # Reset the counter for this new folder
                     folder_video_counter = 1
-                # shutil.move(os.path.join(temp_dir, "output.mp4"), os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"))
-                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"),verbose= False, codec="libx264", audio_codec="aac", logger= None, threads= cpu_count())
-                # Increment the counter for the current folder
+                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"),verbose= False, codec="libx264", audio_codec="aac", logger= None, threads=cpu_count())
                 folder_video_counter += 1
-                print("✅  Finish Downloaded: " + short_link + " in 720p\n")
+                print(f"✅  Finish Video: {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
             else:
                 print(f"🚫  Ohh! Video {short_link} is not available in 720p. Skipping...\n")
                 continue
@@ -223,7 +197,6 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
     shutil.rmtree(temp_dir)
     
     print(f"🥳  All shorts downloaded in {save_path}\n")
-    # print(f"🎉  Total shorts downloaded: {int(folder_video_counter)} | 💩 failed: {len(short_links) - int(folder_video_counter)}\n")
 
 def welcome_message():
     large_text = """
@@ -234,7 +207,7 @@ def welcome_message():
     | |_) | |_| | |   <   ____) | | | | (_) | |  | |_\__ \ | |__| | (_) \ V  V /| | | | | (_) | (_| | (_| |  __/ |   
     |____/ \__,_|_|_|\_\ |_____/|_| |_|\___/|_|   \__|___/ |_____/ \___/ \_/\_/ |_| |_|_|\___/ \__,_|\__,_|\___|_|   
     
-                                                                                                     v1.0.11 | @bsthen                                                                                                              
+                                                                                                     v1.0.12 | @bsthen                                                                                                              
                                                                                                                   
     """
     print(large_text)
