@@ -14,15 +14,14 @@ def set_ffmpeg_path():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     ffmpeg_dir = os.path.join(script_dir, "ffmpeg")
     
-    # if current_os == "Windows":
-    #     ffmpeg_path = os.path.join(ffmpeg_dir, 'windows', 'ffmpeg.exe')
-    # elif current_os == "Darwin":
-    #     ffmpeg_path = os.path.join(ffmpeg_dir, 'macos', 'ffmpeg')
-    # elif current_os == "Linux":
-    #     ffmpeg_path = os.path.join(ffmpeg_dir, 'linux', 'ffmpeg')
-    # else:
-    #     raise Exception("Unsupported operating system")
-    ffmpeg_path = os.path.join(ffmpeg_dir, 'ffmpeg.exe')
+    if current_os == "Windows":
+        ffmpeg_path = os.path.join(ffmpeg_dir, 'ffmpeg.exe')
+    elif current_os == "Darwin":
+        ffmpeg_path = os.path.join(ffmpeg_dir, 'macos', 'ffmpeg')
+    elif current_os == "Linux":
+        ffmpeg_path = os.path.join(ffmpeg_dir, 'linux', 'ffmpeg')
+    else:
+        raise Exception("Unsupported operating system")
     
     config.change_settings({"FFMPEG_BINARY": ffmpeg_path})
 
@@ -148,7 +147,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
                 yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first().download(filename=temp_dir + "video.mp4")
                 yt.streams.filter(only_audio=True).first().download(filename=temp_dir + "audio.mp3")
                 print(f"✅  Finish Downloaded: {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
-                print(f"✂️ Editing Video {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
+                print(f"✂️  Editing Video {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 video = VideoFileClip(temp_dir + "video.mp4")
                 audio = AudioFileClip(temp_dir + "audio.mp3")
                 video = video.set_audio(audio)
@@ -163,7 +162,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
                     if not os.path.exists(folder_path):
                         os.mkdir(folder_path)
                     folder_video_counter = 1
-                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"), verbose= False, codec="libx264", audio_codec="aac", logger= None)
+                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"), verbose= False, codec="h264_nvenc", audio_codec="aac", logger= None)
                 folder_video_counter += 1
                 print(f"✅  Finish Video: {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 
@@ -171,7 +170,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
                 print(f"⬇️  Start Downloading {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 yt.streams.filter(file_extension='mp4', res="720p").first().download(filename=temp_dir + "output.mp4")
                 print(f"✅  Finish Downloaded: {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
-                print(f"✂️ Editing Video {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
+                print(f"✂️  Editing Video {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 video = VideoFileClip(temp_dir + "output.mp4")
                 if speed is not None:
                     video = video.fx(vfx.speedx, float(speed))
@@ -184,7 +183,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
                     if not os.path.exists(folder_path):
                         os.mkdir(folder_path)
                     folder_video_counter = 1
-                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"),verbose= False, codec="libx264", audio_codec="aac", logger= None)
+                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"),verbose= False, codec="h264_nvenc", audio_codec="aac", logger= None)
                 folder_video_counter += 1
                 print(f"✅  Finish Video: {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
             else:
