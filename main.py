@@ -163,7 +163,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
                     if not os.path.exists(folder_path):
                         os.mkdir(folder_path)
                     folder_video_counter = 1
-                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"), verbose= False, codec="libx264", audio_codec="aac", logger= None, threads=cpu_count())
+                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"), verbose= False, codec="libx264", audio_codec="aac", logger= None)
                 folder_video_counter += 1
                 print(f"✅  Finish Video: {short_link} in 1080p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
                 
@@ -184,7 +184,7 @@ def download_shorts(short_links, save_path, videos_per_folder=20, speed=None, fl
                     if not os.path.exists(folder_path):
                         os.mkdir(folder_path)
                     folder_video_counter = 1
-                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"),verbose= False, codec="libx264", audio_codec="aac", logger= None, threads=cpu_count())
+                video.write_videofile(os.path.join(folder_path, f"{sanitize_filename(yt.title)}_{folder_video_counter}.mp4"),verbose= False, codec="libx264", audio_codec="aac", logger= None)
                 folder_video_counter += 1
                 print(f"✅  Finish Video: {short_link} in 720p at ⌚️{datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')}\n")
             else:
