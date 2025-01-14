@@ -15,7 +15,7 @@ def set_ffmpeg_path():
     ffmpeg_dir = os.path.join(script_dir, "ffmpeg")
     
     if current_os == "Windows":
-        ffmpeg_path = os.path.join(ffmpeg_dir, 'ffmpeg.exe')
+        ffmpeg_path = os.path.join(ffmpeg_dir, 'windows', 'ffmpeg.exe')
     elif current_os == "Darwin":
         ffmpeg_path = os.path.join(ffmpeg_dir, 'macos', 'ffmpeg')
     elif current_os == "Linux":
